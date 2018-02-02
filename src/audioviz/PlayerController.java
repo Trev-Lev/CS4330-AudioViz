@@ -9,6 +9,8 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -165,12 +167,23 @@ public class PlayerController implements Initializable {
     
     private void handleReady() {
         Duration duration = mediaPlayer.getTotalDuration();
-        lengthText.setText(duration.toString());
-        Duration ct = mediaPlayer.getCurrentTime();
-        currentText.setText(ct.toString());
+        lengthText.setText(String.format("%.1f", duration.toMillis()));
+        setCurrentTime();   // Code reuse
         currentVisualizer.start(numBands, vizPane);
         timeSlider.setMin(0);
         timeSlider.setMax(duration.toMillis());
+        
+        // Edit: Using a lambda expression to set time
+        timeSlider.valueProperty().addListener((ObservableValue <? extends Number> observable, Number oldValue, Number newValue) -> {
+            setCurrentTime();
+        });
+    }
+    
+    // Added function to fill the currentText label with the current time to one decimal point
+    private void setCurrentTime() {
+        Duration ct = mediaPlayer.getCurrentTime();
+        double current = timeSlider.getValue();
+        currentText.setText(String.format("%.1f", current));
     }
     
     private void handleEndOfMedia() {
@@ -180,11 +193,9 @@ public class PlayerController implements Initializable {
     }
     
     private void handleUpdate(double timestamp, double duration, float[] magnitudes, float[] phases) {
-        Duration ct = mediaPlayer.getCurrentTime();
-        double ms = ct.toMillis();
-        currentText.setText(Double.toString(ms));
+        double ms = mediaPlayer.getCurrentTime().toMillis();    // Simplified 
+        setCurrentTime();                                       // Code reuse
         timeSlider.setValue(ms);
-        
         currentVisualizer.update(timestamp, duration, magnitudes, phases);
     }
     
@@ -217,5 +228,29 @@ public class PlayerController implements Initializable {
         if (mediaPlayer != null) {
            mediaPlayer.stop(); 
         }
+    }
+    
+    /* Added functionality. 
+       The slider by default can be moved, this event handling will pause 
+        the player while it is being moved. */
+    @FXML
+    private void handleSliderTouch(Event event) {
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
+        }
+    }
+    
+    /* Added functionality. 
+       This is to update the slider whenever the mouse dragging it is released. */
+    @FXML
+    private void handleSliderLift(Event event) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seek(new Duration(timeSlider.getValue()));
+            //System.out.println(timeSlider.getValue());
+            currentVisualizer.start(numBands, vizPane);
+            mediaPlayer.play();
+        }  
+
+        
     }
 }
