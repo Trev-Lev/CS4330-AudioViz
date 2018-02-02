@@ -181,7 +181,6 @@ public class PlayerController implements Initializable {
     
     // Added function to fill the currentText label with the current time to one decimal point
     private void setCurrentTime() {
-        Duration ct = mediaPlayer.getCurrentTime();
         double current = timeSlider.getValue();
         currentText.setText(String.format("%.1f", current));
     }
